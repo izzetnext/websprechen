@@ -1,33 +1,54 @@
 document.addEventListener("DOMContentLoaded", function() {
     var recognition = new webkitSpeechRecognition();
-    recognition.lang = 'tr-TR'; // Türkçe dil ayarı
+    recognition.lang = 'tr-TR'; 
     recognition.continuous = true;
     recognition.interimResults = true;
 
     var timeoutId;
     var transcript = '';
+    var isListening = false; // Dinleme durumu
+    var startButton = document.getElementById('start-btn');
 
     recognition.onresult = function(event) {
-        // Mevcut zamanlayıcıyı sıfırla
         clearTimeout(timeoutId);
-
+        transcript = '';
         for (var i = event.resultIndex; i < event.results.length; ++i) {
             transcript += event.results[i][0].transcript;
         }
         document.getElementById('transcript').textContent = transcript;
 
-        // 2 saniye bekleyip yeni satıra geç
         timeoutId = setTimeout(function() {
-            transcript += '\n'; // Yeni satıra geç
+            transcript += '\n';
             document.getElementById('transcript').textContent = transcript;
-        }, 2000); // 2 saniye beklemeyi ayarla
+        }, 2000);
+    };
+
+    recognition.onstart = function() {
+        isListening = true;
+        updateButton();
     };
 
     recognition.onend = function() {
-        recognition.start(); // Dinleme sona erdiğinde tekrar başlat
+        isListening = false;
+        updateButton();
+        recognition.start(); // Sürekli dinlemeyi sağla
     };
 
-    document.getElementById('start-btn').addEventListener('click', function() {
-        recognition.start();
+    startButton.addEventListener('click', function() {
+        if (isListening) {
+            recognition.stop();
+        } else {
+            recognition.start();
+        }
     });
+
+    function updateButton() {
+        if (isListening) {
+            startButton.textContent = 'Dinleniyor...';
+            startButton.style.backgroundColor = 'red';
+        } else {
+            startButton.textContent = 'Dinlemeyi Başlat';
+            startButton.style.backgroundColor = 'green';
+        }
+    }
 });
