@@ -418,8 +418,6 @@ function capitalize(s) {
 }
 
 function createEmail() {
-
-
     // Geçerli tarih ve saati al
     var now = new Date();
     var dateStr = now.getFullYear() + '-' + (now.getMonth() + 1).toString().padStart(2, '0') + '-' + now.getDate().toString().padStart(2, '0');
@@ -427,17 +425,16 @@ function createEmail() {
 
     // Dosya adı için tarih ve saati kullan
     var filename = "transcript_" + dateStr + "_" + timeStr + ".txt";
-
-  
-  var n = final_transcript.indexOf('\n');
-  if (n < 0 || n >= 80) {
-    n = 40 + final_transcript.substring(40).indexOf(' ');
-  }
-
-  
+ 
+      // Eğer final_transcript bir HTML elementiyse veya HTML içeriğini barındırıyorsa
+    var emailContent = final_transcript;
+    if (typeof final_transcript !== 'string') {
+        emailContent = final_transcript.textContent || final_transcript.innerText;
+    }
+  var emailBody = emailContent.replace(/<br\s*[\/]?>/gi, '\n');
 
   var subject = encodeURI(filename);
-  var body = encodeURI(final_transcript);
+  var body = encodeURI(emailBody);
   window.location.href = 'mailto:?subject=' + subject + '&body=' + body;
   
   /*
