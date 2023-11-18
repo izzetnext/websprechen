@@ -1,11 +1,11 @@
 document.addEventListener("DOMContentLoaded", function() {
     var recognition = new webkitSpeechRecognition();
-    recognition.lang = 'tr-TR'; 
+    recognition.lang = 'tr-TR';
     recognition.continuous = true;
     recognition.interimResults = true;
 
     var timeoutId;
-    var isListening = false; 
+    var isListening = false;
     var toggleButton = document.getElementById('toggle-listening');
     var transcriptArea = document.getElementById('transcript');
     var saveButton = document.getElementById('save-text');
@@ -13,8 +13,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
     recognition.onresult = function(event) {
         clearTimeout(timeoutId);
-        
-        // Yeni konuşma parçasını mevcut metne ekle
+
+        // Yalnızca yeni eklenen sonuçları al ve mevcut metne ekle
         var currentTranscript = '';
         for (var i = event.resultIndex; i < event.results.length; ++i) {
             currentTranscript += event.results[i][0].transcript;
@@ -58,7 +58,7 @@ document.addEventListener("DOMContentLoaded", function() {
     saveButton.addEventListener('click', function() {
         var textToSave = transcriptArea.value;
         var blob = new Blob([textToSave], { type: "text/plain;charset=utf-8" });
-        saveAs(blob, "transcript.txt"); // 'FileSaver.js' kütüphanesi gereklidir
+        saveAs(blob, "transcript.txt");
     });
 
     emailButton.addEventListener('click', function() {
