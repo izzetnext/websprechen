@@ -6,6 +6,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
     var timeoutId;
     var isListening = false;
+    var lastResultIndex = 0; // Son işlenen sonuç indeksi
     var toggleButton = document.getElementById('toggle-listening');
     var transcriptArea = document.getElementById('transcript');
     var saveButton = document.getElementById('save-text');
@@ -14,12 +15,13 @@ document.addEventListener("DOMContentLoaded", function() {
     recognition.onresult = function(event) {
         clearTimeout(timeoutId);
 
-        // Yalnızca yeni eklenen sonuçları al ve mevcut metne ekle
+        // Yeni eklenen sonuçları al ve mevcut metne ekle
         var currentTranscript = '';
-        for (var i = event.resultIndex; i < event.results.length; ++i) {
+        for (var i = lastResultIndex; i < event.results.length; ++i) {
             currentTranscript += event.results[i][0].transcript;
         }
         transcriptArea.value += currentTranscript;
+        lastResultIndex = event.results.length; // Son işlenen sonuç indeksini güncelle
 
         // 2 saniye sessizlik sonrasında yeni bir satıra geç
         timeoutId = setTimeout(function() {
@@ -30,6 +32,7 @@ document.addEventListener("DOMContentLoaded", function() {
     recognition.onstart = function() {
         isListening = true;
         updateToggleButton();
+        lastResultIndex = 0; // Her dinleme başlangıcında indeksi sıfırla
     };
 
     recognition.onend = function() {
