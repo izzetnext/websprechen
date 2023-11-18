@@ -5,7 +5,6 @@ document.addEventListener("DOMContentLoaded", function() {
     recognition.interimResults = true;
 
     var timeoutId;
-    var transcript = '';
     var isListening = false; 
     var toggleButton = document.getElementById('toggle-listening');
     var transcriptArea = document.getElementById('transcript');
@@ -14,15 +13,17 @@ document.addEventListener("DOMContentLoaded", function() {
 
     recognition.onresult = function(event) {
         clearTimeout(timeoutId);
-        transcript = '';
+        
+        // Yeni konuşma parçasını mevcut metne ekle
+        var currentTranscript = '';
         for (var i = event.resultIndex; i < event.results.length; ++i) {
-            transcript += event.results[i][0].transcript;
+            currentTranscript += event.results[i][0].transcript;
         }
-        transcriptArea.value = transcript;
+        transcriptArea.value += currentTranscript;
 
+        // 2 saniye sessizlik sonrasında yeni bir satıra geç
         timeoutId = setTimeout(function() {
-            transcript += '\n';
-            transcriptArea.value = transcript;
+            transcriptArea.value += '\n';
         }, 2000);
     };
 
