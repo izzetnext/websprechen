@@ -422,6 +422,26 @@ function capitalize(s) {
 
 function createEmail() {
 
+
+    // Geçerli tarih ve saati al
+    var now = new Date();
+    var dateStr = now.getFullYear() + '-' + (now.getMonth() + 1).toString().padStart(2, '0') + '-' + now.getDate().toString().padStart(2, '0');
+    var timeStr = now.getHours().toString().padStart(2, '0') + '-' + now.getMinutes().toString().padStart(2, '0') + '-' + now.getSeconds().toString().padStart(2, '0');
+
+    // Dosya adı için tarih ve saati kullan
+    var filename = "transcript_" + dateStr + "_" + timeStr + ".txt";
+
+  
+  var n = final_transcript.indexOf('\n');
+  if (n < 0 || n >= 80) {
+    n = 40 + final_transcript.substring(40).indexOf(' ');
+  }
+
+  var subject = encodeURI(filename);
+  var body = encodeURI(final_transcript);
+  window.location.href = 'mailto:?subject=' + subject + '&body=' + body;
+  
+  /*
     // Geçerli tarih ve saati al
     var now = new Date();
     var dateStr = now.getFullYear() + '-' + (now.getMonth() + 1).toString().padStart(2, '0') + '-' + now.getDate().toString().padStart(2, '0');
@@ -430,9 +450,8 @@ function createEmail() {
     // Dosya adı için tarih ve saati kullan
     var filename = "transcript_" + dateStr + "_" + timeStr + ".txt";
   
-        var emailBody = encodeURIComponent(transcriptArea.value);
-        window.open('mailto:transcript@enpoi.de?subject='+filename+'&body=' + final_transcript);
-  
+    window.open('mailto:transcript@enpoi.de?subject='+filename+'&body=' + final_transcript);
+  */
 }
 
 function copyButton() {
