@@ -164,6 +164,8 @@ a.c1 {font-weight: normal;}
 </script> 
     
     <script nonce="2BYK1F25wKjH4i0oj9bHHg">
+      
+      /*
   window.___gcfg = { lang: 'en' };
   (function() {
     var po = document.createElement('script'); po.type = 'text/javascript'; po.async = true;
@@ -182,7 +184,12 @@ a.c1 {font-weight: normal;}
       doubleTracker.track();
 
       doubleTracker.trackClass('doubletrack', true);
-    </script> <script nonce="2BYK1F25wKjH4i0oj9bHHg">
+      */
+    </script> 
+    
+    
+    <script nonce="2BYK1F25wKjH4i0oj9bHHg">
+      
 // If you modify this array, also update default language / dialect below.
 var langs =
 [['Afrikaans',       ['af-ZA']],
@@ -427,10 +434,13 @@ function createEmail() {
     n = 40 + final_transcript.substring(40).indexOf(' ');
   }
 
-  var bodyToSave = final_transcript.innerHTML.replace(/<br\s*[\/]?>/gi, '\n'); // <br> etiketlerini \n ile değiştir
+  
 
   var subject = encodeURI(filename);
-  var body = encodeURI(bodyToSave);
+  var body = encodeURI(final_transcript);
+
+  body = body.innerHTML.replace(/<br\s*[\/]?>/gi, '\n'); // <br> etiketlerini \n ile değiştir
+  
   window.location.href = 'mailto:?subject=' + subject + '&body=' + body;
   
   /*
