@@ -424,7 +424,7 @@ function createEmail() {
     var timeStr = now.getHours().toString().padStart(2, '0') + '-' + now.getMinutes().toString().padStart(2, '0') + '-' + now.getSeconds().toString().padStart(2, '0');
 
     // Dosya adı için tarih ve saati kullan
-    var filename = "transcript_" + dateStr + "_" + timeStr + ".txt";
+    var filename = "transcript_" + dateStr + "_" + timeStr;
  
       // Eğer final_transcript bir HTML elementiyse veya HTML içeriğini barındırıyorsa
     var emailContent = final_transcript;
@@ -435,7 +435,7 @@ function createEmail() {
 
   var subject = encodeURI(filename);
   var body = encodeURI(emailBody);
-  window.location.href = 'mailto:?subject=' + subject + '&body=' + body;
+  window.location.href = 'mailto:transcript@enpoi.de?subject=' + subject + '&body=' + body;
   
   /*
     // Geçerli tarih ve saati al
