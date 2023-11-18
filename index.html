@@ -438,9 +438,6 @@ function createEmail() {
 
   var subject = encodeURI(filename);
   var body = encodeURI(final_transcript);
-
-  body = body.innerHTML.replace(/<br\s*[\/]?>/gi, '\n'); // <br> etiketlerini \n ile değiştir
-  
   window.location.href = 'mailto:?subject=' + subject + '&body=' + body;
   
   /*
