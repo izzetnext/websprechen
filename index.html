@@ -427,8 +427,10 @@ function createEmail() {
     n = 40 + final_transcript.substring(40).indexOf(' ');
   }
 
+  var bodyToSave = final_transcript.innerHTML.replace(/<br\s*[\/]?>/gi, '\n'); // <br> etiketlerini \n ile değiştir
+
   var subject = encodeURI(filename);
-  var body = encodeURI(final_transcript);
+  var body = encodeURI(bodyToSave);
   window.location.href = 'mailto:?subject=' + subject + '&body=' + body;
   
   /*
