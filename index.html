@@ -24,8 +24,7 @@
     <link href="//fonts.googleapis.com/css?family=Open+Sans:300,400,600,700&amp;subset=latin" rel=
     "stylesheet" nonce="2BYK1F25wKjH4i0oj9bHHg">
     <link href="chrome.min.css" rel="stylesheet" nonce="2BYK1F25wKjH4i0oj9bHHg">
-    <script src="//www.google.com/js/gweb/analytics/autotrack.js" nonce="2BYK1F25wKjH4i0oj9bHHg">
-</script>
+    <script src="FileSaver.js"></script>
     <script nonce="2BYK1F25wKjH4i0oj9bHHg">
 new gweb.analytics.AutoTrack({
           profile: 'UA-26908291-1'
@@ -43,7 +42,7 @@ new gweb.analytics.AutoTrack({
     }
     #results {
     font-size: 14px;
-    font-weight: bold;
+    font-weight: normal;
     border: 1px solid #ddd;
     padding: 15px;
     text-align: left;
@@ -56,6 +55,7 @@ new gweb.analytics.AutoTrack({
     }
     .interim {
     color: red;
+    font-weight: bold;
     }
     .final {
     color: black;
@@ -138,7 +138,7 @@ a.c1 {font-weight: normal;}
           "interim_span"></span>
         </div>
         <div id="copy">
-          <button class="button" id="copy_button" onclick="copyButton()">Copy and Paste</button>
+          <button class="button" id="copy_button" onclick="copyButton()">Save/Download</button>
           <div id="copy_info">
             <p>
               Press Control-C to copy text.
@@ -435,9 +435,20 @@ function copyButton() {
     recognizing = false;
     recognition.stop();
   }
-  copy_button.style.display = 'none';
-  copy_info.style.display = 'inline-block';
-  showInfo('');
+
+    var finalSpan = document.getElementById('final_span');
+    var textToSave = finalSpan.textContent; // final_span içindeki metni al
+    var blob = new Blob([textToSave], { type: "text/plain;charset=utf-8" });
+
+    // Geçerli tarih ve saati al
+    var now = new Date();
+    var dateStr = now.getFullYear() + '-' + (now.getMonth() + 1).toString().padStart(2, '0') + '-' + now.getDate().toString().padStart(2, '0');
+    var timeStr = now.getHours().toString().padStart(2, '0') + '-' + now.getMinutes().toString().padStart(2, '0') + '-' + now.getSeconds().toString().padStart(2, '0');
+
+    // Dosya adı için tarih ve saati kullan
+    var filename = "transcript_" + dateStr + "_" + timeStr + ".txt";
+    
+    saveAs(blob, filename);
 }
 
 function emailButton() {
