@@ -451,7 +451,7 @@ function copyButton() {
   }
 
     var finalSpan = document.getElementById('final_span');
-    var textToSave = finalSpan.textContent; // final_span içindeki metni al
+    var textToSave = finalSpan.innerHTML.replace(/<br\s*[\/]?>/gi, '\n'); // <br> etiketlerini \n ile değiştir
     var blob = new Blob([textToSave], { type: "text/plain;charset=utf-8" });
 
     // Geçerli tarih ve saati al
