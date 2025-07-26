@@ -338,6 +338,7 @@ var restart_timeout;
 var keep_listening = false; // Mikrofonu açık tutmak için
 var silence_timeout = 15000; // 15 saniye sessizlik süresi
 var is_mobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+var current_sentence = ''; // Mobilde mevcut cümleyi toplamak için
 
 if (!('webkitSpeechRecognition' in window)) {
   upgrade();
@@ -358,6 +359,18 @@ if (!('webkitSpeechRecognition' in window)) {
     recognizing = true;
     showInfo('info_speak_now');
     start_img.src = 'mic-animate.gif';
+    
+    // Masaüstünde timeout sistemi
+    if (!is_mobile) {
+      if (restart_timeout) {
+        clearTimeout(restart_timeout);
+      }
+      restart_timeout = setTimeout(function() {
+        if (recognizing && keep_listening) {
+          recognition.stop();
+        }
+      }, silence_timeout);
+    }
   };
 
   recognition.onerror = function(event) {
@@ -449,11 +462,20 @@ if (!('webkitSpeechRecognition' in window)) {
     
     for (var i = event.resultIndex; i < event.results.length; ++i) {
       if (event.results[i].isFinal) {
-        // Mobilde metni aynı satıra ekle, masaüstünde yeni satır
+        var transcript = event.results[i][0].transcript;
+        
         if (is_mobile) {
-          final_transcript += event.results[i][0].transcript + " ";
+          // Mobilde: kelimeleri mevcut cümleye ekle
+          current_sentence += transcript + " ";
+          
+          // Eğer cümle sonu işareti varsa, cümleyi tamamla
+          if (transcript.match(/[.!?]$/)) {
+            final_transcript += current_sentence.trim() + "<br>";
+            current_sentence = '';
+          }
         } else {
-          final_transcript += event.results[i][0].transcript + "<br>";
+          // Masaüstünde: her final result yeni satır
+          final_transcript += transcript + "<br>";
         }
       } else {
         interim_transcript += event.results[i][0].transcript;
@@ -461,10 +483,17 @@ if (!('webkitSpeechRecognition' in window)) {
     }
     
     final_transcript = capitalize(final_transcript);
-    final_span.innerHTML = linebreak(final_transcript);
+    
+    // Mobilde mevcut cümleyi de göster
+    var display_text = final_transcript;
+    if (is_mobile && current_sentence.trim()) {
+      display_text += current_sentence.trim();
+    }
+    
+    final_span.innerHTML = linebreak(display_text);
     interim_span.innerHTML = linebreak(interim_transcript);
     
-    if (final_transcript || interim_transcript) {
+    if (final_transcript || interim_transcript || current_sentence.trim()) {
       showButtons('inline-block');
     }
     
@@ -577,6 +606,7 @@ function startButton(event) {
   // Mikrofonu başlat
   keep_listening = true;
   final_transcript = '';
+  current_sentence = ''; // Mobil için cümle buffer'ını sıfırla
   recognition.lang = select_dialect.value;
   recognition.start();
   ignore_onend = false;
