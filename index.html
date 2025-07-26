@@ -289,8 +289,31 @@ var langs =
 for (var i = 0; i < langs.length; i++) {
   select_language.options[i] = new Option(langs[i][0], i);
 }
+
+// Tarayıcı dilini algıla ve varsayılan dili ayarla
+function setDefaultLanguageFromBrowser() {
+  var browserLang = navigator.language || navigator.userLanguage;
+  var langCode = browserLang.split('-')[0]; // 'tr-TR' -> 'tr'
+  
+  var defaultIndex = 10; // İngilizce (fallback)
+  
+  // Dil koduna göre eşleşme ara
+  for (var i = 0; i < langs.length; i++) {
+    var langArray = langs[i];
+    for (var j = 1; j < langArray.length; j++) {
+      if (langArray[j][0].startsWith(langCode)) {
+        defaultIndex = i;
+        break;
+      }
+    }
+    if (defaultIndex !== 10 && defaultIndex === i) break;
+  }
+  
+  return defaultIndex;
+}
+
 // Set default language / dialect.
-select_language.selectedIndex = 48; // Türkçe
+select_language.selectedIndex = setDefaultLanguageFromBrowser();
 updateCountry();
 select_dialect.selectedIndex = 0;
 showInfo('info_start');
@@ -311,13 +334,25 @@ var final_transcript = '';
 var recognizing = false;
 var ignore_onend;
 var start_timestamp;
+var restart_timeout;
+var keep_listening = false; // Mikrofonu açık tutmak için
+var silence_timeout = 15000; // 15 saniye sessizlik süresi
+var is_mobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
 if (!('webkitSpeechRecognition' in window)) {
   upgrade();
 } else {
   start_button.style.display = 'inline-block';
   var recognition = new webkitSpeechRecognition();
-  recognition.continuous = true;
-  recognition.interimResults = true;
+  
+  // Mobil cihazlar için farklı ayarlar
+  if (is_mobile) {
+    recognition.continuous = false; // Mobilde continuous false
+    recognition.interimResults = false; // Mobilde interim results false
+  } else {
+    recognition.continuous = true;
+    recognition.interimResults = true;
+  }
 
   recognition.onstart = function() {
     recognizing = true;
@@ -326,31 +361,64 @@ if (!('webkitSpeechRecognition' in window)) {
   };
 
   recognition.onerror = function(event) {
+    console.log('Speech recognition error:', event.error);
+    
     if (event.error == 'no-speech') {
-      start_img.src = 'mic.gif';
-      showInfo('info_no_speech');
-      ignore_onend = true;
+      if (keep_listening && is_mobile) {
+        // Mobilde hemen yeniden başlat
+        setTimeout(function() {
+          if (keep_listening && !recognizing) {
+            recognition.start();
+          }
+        }, 500);
+      }
+      return;
     }
+    
     if (event.error == 'audio-capture') {
       start_img.src = 'mic.gif';
       showInfo('info_no_microphone');
-      ignore_onend = true;
+      keep_listening = false;
+      return;
     }
+    
     if (event.error == 'not-allowed') {
       if (event.timeStamp - start_timestamp < 100) {
         showInfo('info_blocked');
       } else {
         showInfo('info_denied');
       }
-      ignore_onend = true;
+      keep_listening = false;
+      return;
+    }
+    
+    // Diğer hatalar için mobilde yeniden başlat
+    if (keep_listening && is_mobile) {
+      setTimeout(function() {
+        if (keep_listening && !recognizing) {
+          recognition.start();
+        }
+      }, 1000);
     }
   };
 
   recognition.onend = function() {
     recognizing = false;
-    if (ignore_onend) {
+    
+    if (restart_timeout) {
+      clearTimeout(restart_timeout);
+    }
+    
+    // Mobilde sürekli yeniden başlat
+    if (keep_listening) {
+      setTimeout(function() {
+        if (keep_listening) {
+          recognition.start();
+        }
+      }, is_mobile ? 300 : 1000); // Mobilde daha hızlı restart
       return;
     }
+    
     start_img.src = 'mic.gif';
     if (!final_transcript) {
       showInfo('info_start');
@@ -371,24 +439,45 @@ if (!('webkitSpeechRecognition' in window)) {
 
   recognition.onresult = function(event) {
     var interim_transcript = '';
+    
     if (typeof(event.results) == 'undefined') {
       recognition.onend = null;
       recognition.stop();
       upgrade();
       return;
     }
+    
     for (var i = event.resultIndex; i < event.results.length; ++i) {
       if (event.results[i].isFinal) {
-        final_transcript += event.results[i][0].transcript + "<br>";
+        // Mobilde metni aynı satıra ekle, masaüstünde yeni satır
+        if (is_mobile) {
+          final_transcript += event.results[i][0].transcript + " ";
+        } else {
+          final_transcript += event.results[i][0].transcript + "<br>";
+        }
       } else {
         interim_transcript += event.results[i][0].transcript;
       }
     }
+    
     final_transcript = capitalize(final_transcript);
     final_span.innerHTML = linebreak(final_transcript);
     interim_span.innerHTML = linebreak(interim_transcript);
+    
     if (final_transcript || interim_transcript) {
       showButtons('inline-block');
+    }
+    
+    // Masaüstünde timeout sistemi
+    if (!is_mobile) {
+      if (restart_timeout) {
+        clearTimeout(restart_timeout);
+      }
+      restart_timeout = setTimeout(function() {
+        if (recognizing && keep_listening) {
+          recognition.stop();
+        }
+      }, silence_timeout);
     }
   };
 }
@@ -476,16 +565,24 @@ function emailButton() {
 
 function startButton(event) {
   if (recognizing) {
+    // Mikrofonu durdur
+    keep_listening = false;
+    if (restart_timeout) {
+      clearTimeout(restart_timeout);
+    }
     recognition.stop();
     return;
   }
+  
+  // Mikrofonu başlat
+  keep_listening = true;
   final_transcript = '';
   recognition.lang = select_dialect.value;
   recognition.start();
   ignore_onend = false;
   final_span.innerHTML = '';
   interim_span.innerHTML = '';
-  start_img.src = 'mic-slash.gif';
+  start_img.src = 'mic-animate.gif';
   showInfo('info_allow');
   showButtons('none');
   start_timestamp = event.timeStamp;
