@@ -289,8 +289,31 @@ var langs =
 for (var i = 0; i < langs.length; i++) {
   select_language.options[i] = new Option(langs[i][0], i);
 }
+
+// Tarayıcı dilini algıla ve varsayılan dili ayarla
+function setDefaultLanguageFromBrowser() {
+  var browserLang = navigator.language || navigator.userLanguage;
+  var langCode = browserLang.split('-')[0]; // 'tr-TR' -> 'tr'
+  
+  var defaultIndex = 10; // İngilizce (fallback)
+  
+  // Dil koduna göre eşleşme ara
+  for (var i = 0; i < langs.length; i++) {
+    var langArray = langs[i];
+    for (var j = 1; j < langArray.length; j++) {
+      if (langArray[j][0].startsWith(langCode)) {
+        defaultIndex = i;
+        break;
+      }
+    }
+    if (defaultIndex !== 10 && defaultIndex === i) break;
+  }
+  
+  return defaultIndex;
+}
+
 // Set default language / dialect.
-select_language.selectedIndex = 48; // Türkçe
+select_language.selectedIndex = setDefaultLanguageFromBrowser();
 updateCountry();
 select_dialect.selectedIndex = 0;
 showInfo('info_start');
@@ -311,6 +334,10 @@ var final_transcript = '';
 var recognizing = false;
 var ignore_onend;
 var start_timestamp;
+var restart_timeout;
+var keep_listening = false; // Mikrofonu açık tutmak için
+var silence_timeout = 20000; // 20 saniye sessizlik süresi
+
 if (!('webkitSpeechRecognition' in window)) {
   upgrade();
 } else {
@@ -323,18 +350,38 @@ if (!('webkitSpeechRecognition' in window)) {
     recognizing = true;
     showInfo('info_speak_now');
     start_img.src = 'mic-animate.gif';
+    
+    // Sessizlik timeout'unu başlat
+    if (restart_timeout) {
+      clearTimeout(restart_timeout);
+    }
+    restart_timeout = setTimeout(function() {
+      if (recognizing && keep_listening) {
+        recognition.stop();
+      }
+    }, silence_timeout);
   };
 
   recognition.onerror = function(event) {
     if (event.error == 'no-speech') {
-      start_img.src = 'mic.gif';
-      showInfo('info_no_speech');
+      start_img.src = 'mic-animate.gif';
+      showInfo('info_speak_now');
       ignore_onend = true;
+      
+      // Sessizlik durumunda mikrofonu yeniden başlat
+      if (keep_listening) {
+        setTimeout(function() {
+          if (keep_listening && !recognizing) {
+            recognition.start();
+          }
+        }, 1000);
+      }
     }
     if (event.error == 'audio-capture') {
       start_img.src = 'mic.gif';
       showInfo('info_no_microphone');
       ignore_onend = true;
+      keep_listening = false;
     }
     if (event.error == 'not-allowed') {
       if (event.timeStamp - start_timestamp < 100) {
@@ -343,14 +390,32 @@ if (!('webkitSpeechRecognition' in window)) {
         showInfo('info_denied');
       }
       ignore_onend = true;
+      keep_listening = false;
     }
   };
 
   recognition.onend = function() {
     recognizing = false;
+    
+    if (restart_timeout) {
+      clearTimeout(restart_timeout);
+    }
+    
     if (ignore_onend) {
+      ignore_onend = false;
       return;
     }
+    
+    // Eğer kullanıcı hala dinleme modunda ise mikrofonu yeniden başlat
+    if (keep_listening) {
+      setTimeout(function() {
+        if (keep_listening) {
+          recognition.start();
+        }
+      }, 1000);
+      return;
+    }
+    
     start_img.src = 'mic.gif';
     if (!final_transcript) {
       showInfo('info_start');
@@ -371,6 +436,19 @@ if (!('webkitSpeechRecognition' in window)) {
 
   recognition.onresult = function(event) {
     var interim_transcript = '';
+    
+    // Yeni konuşma algılandığında timeout'u sıfırla
+    if (restart_timeout) {
+      clearTimeout(restart_timeout);
+    }
+    
+    // Yeni timeout başlat
+    restart_timeout = setTimeout(function() {
+      if (recognizing && keep_listening) {
+        recognition.stop();
+      }
+    }, silence_timeout);
+    
     if (typeof(event.results) == 'undefined') {
       recognition.onend = null;
       recognition.stop();
@@ -476,16 +554,24 @@ function emailButton() {
 
 function startButton(event) {
   if (recognizing) {
+    // Mikrofonu durdur
+    keep_listening = false;
+    if (restart_timeout) {
+      clearTimeout(restart_timeout);
+    }
     recognition.stop();
     return;
   }
+  
+  // Mikrofonu başlat
+  keep_listening = true;
   final_transcript = '';
   recognition.lang = select_dialect.value;
   recognition.start();
   ignore_onend = false;
   final_span.innerHTML = '';
   interim_span.innerHTML = '';
-  start_img.src = 'mic-slash.gif';
+  start_img.src = 'mic-animate.gif';
   showInfo('info_allow');
   showButtons('none');
   start_timestamp = event.timeStamp;
